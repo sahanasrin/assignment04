@@ -1,0 +1,76 @@
+---
+title: "Assignment 04"
+author: "Sahana Srinivasan and Maria Antonella Pareira" 
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+library(srvyr)
+tinytex::install_tinytex()
+```
+
+```{r}
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\n \\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
+```
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#Data Cleaning and Preprocessing
+library("ipumsr")
+library("tidyverse")
+library("dplyr")
+ddi <- read_ipums_ddi("cps_00002.xml")
+data <- read_ipums_micro(ddi)
+data1 <- data %>% 
+  drop_na(WTFINL)
+library(srvyr)
+cps_svy <- as_survey_design(data1, weights = WTFINL)
+class(cps_svy)
+class(data)
+
+#Visualization 1: Female and Employment Rate From 1980 Onwards
+library("ggplot2")
+library("haven")
+cps_svy %>% 
+  mutate(female = if_else(SEX == 2, 1, 0)) %>% 
+  mutate(employed = if_else(EMPSTAT == 10 | EMPSTAT == 12, 1, 0)) %>%
+  mutate(unemployed = if_else(EMPSTAT == 10 | EMPSTAT == 12, 0, 1)) %>%
+  filter (female == 1,  AGE >= 16) %>% 
+  group_by(YEAR) %>% 
+  summarize(
+    employed = survey_mean(employed == 1)
+  ) %>% 
+  ggplot(mapping = aes(x = YEAR, y = employed)) + 
+  geom_line() + 
+  theme_minimal() + 
+  labs(
+    title = "Female Employment Rate 1980-2020 Upon Each Decade", 
+    subtitle = "Female employment rate peaked in 2000 and has decreased since", 
+    x = "Year", 
+    y = "Female Employment Rate", 
+    caption = "Source = Integrated Public Use Microdata Series by Minnesota Population Center"
+  )
+  
+ 
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

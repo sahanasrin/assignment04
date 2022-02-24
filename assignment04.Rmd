@@ -55,16 +55,58 @@ cps_svy %>%
   geom_line() + 
   theme_minimal() + 
   labs(
-    title = "Female Employment Rate 1980-2020 Upon Each Decade", 
+    title = "Female Employment Rate 1980-2020, Upon Start of Each Decade", 
     subtitle = "Female employment rate peaked in 2000 and has decreased since", 
     x = "Year", 
     y = "Female Employment Rate", 
-    caption = "Source = Integrated Public Use Microdata Series by Minnesota Population Center"
-  )
-  
- 
+    caption = "Source = Sarah Flood, Miriam
+    King, Renae Rodgers, Steven Ruggles, J. Robert
+    Warren and Michael Westberry. Integrated Public
+    Use Microdata Series, Current Population Survey:
+    Version 9.0 [dataset]. Minneapolis, MN: IPUMS,
+    2021. https://doi.org/10.18128/D030.V9.0*"
+    )
 ```
 
+```{r}
+#Visualization 2: 
+cps_svy %>% 
+  mutate(female = if_else(SEX == 2, 1, 0)) %>% 
+  mutate(age_category = case_when( #create variable for generations 
+    AGE <= 9 ~ "Youth",
+    AGE <= 25 ~ "Gen Z" , 
+    AGE <= 41 ~ "Millenials", 
+    AGE <= 57 ~ "Gen X", 
+    AGE <= 67 ~ "Boomers 2", 
+    AGE <= 76 ~ "Boomers 1",
+    AGE <= 94 ~ "Post War",
+    TRUE ~ "WWII"
+        )
+    ) %>% 
+  mutate(
+    employed = if_else(EMPSTAT == 10 | EMPSTAT == 12, 1, 0)) %>% 
+  filter(YEAR == 2020) %>% 
+  filter(female == 1, AGE >= 16) %>%
+  group_by(age_category) %>%
+  summarize( 
+    employed = mean(employed == 1), 
+  ) %>% 
+ggplot(mapping = aes(x = age_category, y = employed)) + 
+geom_col(color = "blue", fill = "red") + 
+  theme_minimal() + 
+   labs(
+    title = "Proportion of Females Employed By Generation in 2020", 
+    subtitle = "Female employment is highest among millenials and lowest among post-war", 
+    x = "Generations", 
+    y = "Proportion of Females Employed", 
+    caption = "Source = Sarah Flood, Miriam
+    King, Renae Rodgers, Steven Ruggles, J. Robert
+    Warren and Michael Westberry. Integrated Public
+    Use Microdata Series, Current Population Survey:
+    Version 9.0 [dataset]. Minneapolis, MN: IPUMS,
+    2021. https://doi.org/10.18128/D030.V9.0*"
+    )
+```
 ## Including Plots
 
 You can also embed plots, for example:

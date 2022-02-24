@@ -19,14 +19,9 @@ knitr::knit_hooks$set(chunk = function(x, options) {
   ifelse(options$size != "normalsize", paste0("\n \\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
 })
 ```
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r}
-#Data Cleaning and Preprocessing
+#Data Cleaning and Processing
 library("ipumsr")
 library("tidyverse")
 library("dplyr")
@@ -69,7 +64,7 @@ cps_svy %>%
 ```
 
 ```{r}
-#Visualization 2: 
+#Visualization 2: Employment by Generation  
 cps_svy %>% 
   mutate(female = if_else(SEX == 2, 1, 0)) %>% 
   mutate(age_category = case_when( #create variable for generations 
@@ -107,12 +102,24 @@ geom_col(color = "blue", fill = "red") +
     2021. https://doi.org/10.18128/D030.V9.0*"
     )
 ```
-## Including Plots
 
-You can also embed plots, for example:
+```{r}
+#Visualization 3: 
+cps_svy %>%  
+mutate(race = case_when(
+    RACE == 100 ~ "White",
+    RACE == 200 ~ "Black", 
+    RACE == 300 ~ "American Indian/Aleut/Eskimo", 
+    RACE == 650 | RACE == 651 ~ "Asian", 
+    RACE <= 830 | RACE >= 700 ~ "Other")) %>%
+ mutate(
+    employed = if_else(EMPSTAT == 10 | EMPSTAT == 12, 1, 0)) %>% 
+  mutate(gender = case_when(
+    SEX == 1 ~ "Male",
+    SEX == 2 ~ "Female")) %>%
+  filter (YEAR == 2020) %>%
+  filter (employed == 1, AGE >= 16) %>%
+  ggplot (mapping = aes( x = gender , y = race)) + 
+  geom_count(color = "blue", fill = "blue", shape = 21)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

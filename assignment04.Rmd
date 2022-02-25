@@ -1,6 +1,6 @@
 ---
 title: "Assignment 04"
-author: "Sahana Srinivasan and Maria Antonella Pareira" 
+author: "Sahana Srinivasan and Maria Antonella Pereira" 
 output: html_document
 urlcolor: blue
 ---
@@ -11,7 +11,7 @@ This document identifies trends in labor market outcomes for women in the United
 Data files and the data dictionary for the CPS can be found [at this link](https://cps.ipums.org/cps/about.shtml). 
 
 ### Data Cleaning and Setting Up
-```{r setup, include = FALSE, echo = FALSE}
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
@@ -19,7 +19,7 @@ library(srvyr)
 tinytex::install_tinytex()
 ```
 
-```{r, echo = FALSE}
+```{r}
 def.chunk.hook  <- knitr::knit_hooks$get("chunk")
 knitr::knit_hooks$set(chunk = function(x, options) {
   x <- def.chunk.hook(x, options)
@@ -27,16 +27,20 @@ knitr::knit_hooks$set(chunk = function(x, options) {
 })
 ```
 
-```{r, echo = FALSE}
+```{r}
 #Data Cleaning and Processing
 library("ipumsr")
 library("tidyverse")
 library("dplyr")
-ddi <- read_ipums_ddi("cps_00002.xml")
+
+#Read data source 
+ddi <- read_ipums_ddi("cps_00002.xml") 
 data <- read_ipums_micro(ddi)
 data1 <- data %>% 
   drop_na(WTFINL)
 library(srvyr)
+
+#Assign weights
 cps_svy <- as_survey_design(data1, weights = WTFINL)
 class(cps_svy)
 class(data)
@@ -51,17 +55,20 @@ Figure 1 shows the change in female employment rates in the United States from 1
 library("ggplot2")
 library("haven")
 cps_svy %>% 
+  #Create dummy variables
   mutate(female = if_else(SEX == 2, 1, 0)) %>% 
-  mutate(employed = if_else(EMPSTAT == 10 | EMPSTAT == 12, 1, 0)) %>%
-  mutate(unemployed = if_else(EMPSTAT == 10 | EMPSTAT == 12, 0, 1)) %>%
+  mutate(employed = if_else(EMPSTAT == 10 | EMPSTAT == 12, 1, 0)) %>% 
+  #Filter for working age women
   filter (female == 1,  AGE >= 16) %>% 
+  #Calculate proportion of employed working age women by year
   group_by(YEAR) %>% 
   summarize(
     employed = survey_mean(employed == 1)
   ) %>% 
+  #Create line graph
   ggplot(mapping = aes(x = YEAR, y = employed)) + 
-  geom_line() + 
-  geom_point() + 
+  geom_line(linetype = 2, size = 1) + 
+  geom_point(size = 2) + 
   theme_minimal() + 
   labs(
     title = "Figure 1. Female Employment Rate 1980-2020, Upon Start of Each Decade",
@@ -84,6 +91,7 @@ Figure 2 shows employment rates by generation for women in the United States in 
 ```{r}
 #Figure 2 
 cps_svy %>% 
+  #Create variables for analysis
   mutate(female = if_else(SEX == 2, 1, 0)) %>% 
   mutate(age_category = case_when( #create variable for generations 
     AGE <= 9 ~ "Youth",
@@ -97,15 +105,17 @@ cps_svy %>%
         )
     ) %>% 
   mutate(
-    employed = if_else(EMPSTAT == 10 | EMPSTAT == 12, 1, 0)) %>% 
+    employed = if_else(EMPSTAT == 10 | EMPSTAT == 12, 1, 0)) %>%
+  #Filter for working age women 2020
   filter(YEAR == 2020) %>% 
   filter(female == 1, AGE >= 16) %>%
   group_by(age_category) %>%
   summarize( 
     employed = mean(employed == 1), 
   ) %>% 
+  #Create bar graph
 ggplot(mapping = aes(x = age_category, y = employed)) + 
-geom_col(color = "blue", fill = "red") + 
+geom_col(color = "blue", fill = "blue") + 
   scale_x_discrete(limits = c("Post War", "Boomers 1", "Boomers 2", "Gen X", "Millenials", "Gen Z")) +
   theme_minimal() + 
    labs(
@@ -128,7 +138,8 @@ Figure 3 shows the distribution of ages for women not in the labor force disaggr
 
 ```{r}
 #Figure 3: 
-ggplot1<- data1%>%  
+boxplot1<- data1%>%  
+  #Create variables for analysis
 mutate(race = case_when(
     RACE == 100 ~ "White",
     RACE == 200 ~ "Black", 
@@ -137,8 +148,10 @@ mutate(race = case_when(
     RACE <= 830 | RACE >= 700 ~ "Other")) %>%
   mutate(
     labor_force = if_else(LABFORCE == 2, 1, 0)) %>% 
+  #Filter for working age women not in labor force in 2010
 filter (YEAR == 2010) %>%
 filter (SEX == 2, AGE >= 16, labor_force == 0) %>%
+  #Create boxplot1
 ggplot(mapping = aes( x = race , y = AGE)) + 
 geom_boxplot() + 
   theme_minimal() + 
@@ -151,7 +164,8 @@ geom_boxplot() +
 
 
 library("patchwork")
-ggplot2 <- data1%>%  
+boxplot2 <- data1%>% 
+  #Create variables for analysis
 mutate(race = case_when(
     RACE == 100 ~ "White",
     RACE == 200 ~ "Black", 
@@ -160,8 +174,10 @@ mutate(race = case_when(
     RACE <= 830 | RACE >= 700 ~ "Other")) %>%
  mutate(
     labor_force = if_else(LABFORCE == 2, 1, 0)) %>% 
+  #Filter for working age women not in labor force in 2010
 filter (YEAR == 2020) %>%
 filter (SEX == 2, AGE >= 16, labor_force == 0) %>%
+  #Create boxplot2
 ggplot(mapping = aes( x = race , y = AGE)) + 
 geom_boxplot() + 
   theme_minimal() + 
@@ -178,7 +194,7 @@ geom_boxplot() +
     2021. https://doi.org/10.18128/D030.V9.0*"
     )
 
-ggplot1 / ggplot2 
+boxplot1 / boxplot2 
   
 
 
@@ -192,6 +208,7 @@ This graph depicts numbers of employment and non-employment disaggregated by hig
 ```{r}
 #Visualization 4 - 
 data1 %>% 
+  #Create variables for analysis
   mutate(employed = if_else(EMPSTAT == 10 | EMPSTAT == 12, "Employed", "Not Employed")) %>% 
   mutate(ed_level = case_when( 
     EDUC < 032 & EDUC >= 021 ~ "Elementary", 
@@ -200,9 +217,11 @@ data1 %>%
     EDUC < 122 ~ "Bachelors", 
     EDUC <= 125 ~ "Graduate" 
     )) %>% 
+  #Filter for working age women in 2020
   filter(SEX == 2, AGE >= 16, YEAR == 2020) %>% 
+  #Create plot 
   ggplot(mapping = aes(x = ed_level, y = employed), position = "dodge") + 
-  geom_count() + 
+  geom_count(color = "blue", fill = "blue") + 
   scale_size_area(max_size = 30) + 
   scale_x_discrete(limits = c("Elementary", "Middle", "High", "Bachelors", "Graduate")) +
   ggtitle("Figure 4. Employment and Non-employment Numbers by Highest Level of Education Completed (2020)") + 
@@ -220,3 +239,17 @@ data1 %>%
     2021. https://doi.org/10.18128/D030.V9.0*"
     ) 
 ```
+
+### SSH Keys
+
+**Sahana**
+
+
+![Sahana](C:\Users\maria\Desktop\Spring 2022\Data Science\assignment04\SSH_Sahana.jpeg)
+
+
+
+**Maria**
+
+![Maria](C:\Users\maria\Desktop\Spring 2022\Data Science\assignment04\SSH_Maria.png) 
+
